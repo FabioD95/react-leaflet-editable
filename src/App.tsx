@@ -1,4 +1,4 @@
-import { MapContainer, Polygon, TileLayer } from "react-leaflet";
+import { MapContainer, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import type { LatLngExpression } from "leaflet";
 import "leaflet-editable";
@@ -31,11 +31,8 @@ function App() {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {polygons.map((polygon, index) => (
-        <Polygon key={index} positions={polygon} />
-      ))}
 
-      <LeafletEditTools polygonsData={polygons} />
+      <LeafletEditTools polygons={polygons} />
     </MapContainer>
   );
 }
