@@ -1,7 +1,14 @@
-import type { LatLngExpression, LeafletEvent } from "leaflet";
+// import type { Map } from "leaflet";
+import type {
+  LatLngExpression,
+  Layer,
+  LeafletEvent,
+  LayerGroup,
+} from "leaflet";
 import L from "leaflet";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Polygon, useMap } from "react-leaflet";
+import "leaflet-editable";
 
 interface LeafletEditToolsProps {
   polygons?: LatLngExpression[][];
@@ -9,34 +16,66 @@ interface LeafletEditToolsProps {
 
 const LeafletEditTools = ({ polygons = [] }: LeafletEditToolsProps) => {
   const map = useMap();
+
   const [selectedPolygon, setSelectedPolygon] = useState<{
     polygon: LatLngExpression[] | null;
     layerId: number | null;
   }>({ polygon: null, layerId: null });
 
+  // Create a LayerGroup to hold the polygons
+  const polygonLayerGroup = useRef<LayerGroup | null>(null);
+
   useEffect(() => {
     if (!map || !map.editTools) return;
-    const onDrawingEnd = (e: LeafletEvent) =>
-      console.log("✅ Disegno completato", e);
-    map.on("editable:drawing:end", onDrawingEnd);
-    return () => {
-      map.off("editable:drawing:end", onDrawingEnd);
-    };
+
+    // Inizializza il LayerGroup se non esiste
+    if (!polygonLayerGroup.current) {
+      polygonLayerGroup.current = L.layerGroup();
+      polygonLayerGroup.current.addTo(map);
+    }
+
+    // Setup eventi Leaflet.Editable
+    if (map.editTools) {
+      const onDrawingEnd = (e: LeafletEvent) => {
+        console.log("✅ Disegno completato", e);
+        // Aggiungi automaticamente il nuovo layer al gruppo
+        if (e.layer && polygonLayerGroup.current) {
+          polygonLayerGroup.current.addLayer(e.layer);
+        }
+      };
+
+      map.on("editable:drawing:end", onDrawingEnd);
+      return () => {
+        map.off("editable:drawing:end", onDrawingEnd);
+      };
+    }
   }, [map]);
 
+  // Aggiungi i poligoni iniziali al LayerGroup
+  const addLayerToGroup = (layer: Layer) => {
+    if (polygonLayerGroup.current) {
+      polygonLayerGroup.current.addLayer(layer);
+    }
+  };
+
+  // Funzione per avviare l'editing del poligono selezionato
   const startEditing = () => {
-    if (!selectedPolygon || !map || !map.editTools) return;
-    map.eachLayer((layer) => {
-      if (layer instanceof L.Polygon) {
-        const polygonLayer = layer as L.Polygon;
-        if (
-          selectedPolygon.layerId ===
-          (polygonLayer as unknown as { _leaflet_id: number })._leaflet_id
-        ) {
-          polygonLayer.enableEdit();
-        }
-      }
-    });
+    if (
+      !selectedPolygon.layerId ||
+      !map ||
+      !map.editTools ||
+      !polygonLayerGroup.current
+    ) {
+      console.warn("Condizioni per l'editing non soddisfatte");
+      return;
+    }
+    const layer = polygonLayerGroup.current.getLayer(selectedPolygon.layerId);
+    // console.log("Layer trovato:", layer);
+    if (layer && layer instanceof L.Polygon) {
+      // Verifica che il layer abbia le funzionalità di editing
+      layer.enableEdit();
+      //   console.log("✏️ Editing abilitato per layer:", selectedPolygon.layerId);
+    }
   };
 
   return (
@@ -84,6 +123,9 @@ const LeafletEditTools = ({ polygons = [] }: LeafletEditToolsProps) => {
           key={index}
           positions={polygon}
           eventHandlers={{
+            add: (leafletEvent: LeafletEvent) => {
+              addLayerToGroup(leafletEvent.target);
+            },
             click: (leafletEvent: LeafletEvent) => {
               setSelectedPolygon({
                 polygon: polygon,
