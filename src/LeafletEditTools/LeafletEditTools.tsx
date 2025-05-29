@@ -9,9 +9,10 @@ interface LeafletEditToolsProps {
 
 const LeafletEditTools = ({ polygons = [] }: LeafletEditToolsProps) => {
   const map = useMap();
-  const [selectedPolygonLayerId, setSelectedPolygonLayerId] = useState<
-    number | null
-  >(null);
+  const [selectedPolygon, setSelectedPolygon] = useState<{
+    polygon: LatLngExpression[] | null;
+    layerId: number | null;
+  }>({ polygon: null, layerId: null });
 
   useEffect(() => {
     if (!map || !map.editTools) return;
@@ -24,12 +25,12 @@ const LeafletEditTools = ({ polygons = [] }: LeafletEditToolsProps) => {
   }, [map]);
 
   const startEditing = () => {
-    if (!selectedPolygonLayerId || !map || !map.editTools) return;
+    if (!selectedPolygon || !map || !map.editTools) return;
     map.eachLayer((layer) => {
       if (layer instanceof L.Polygon) {
         const polygonLayer = layer as L.Polygon;
         if (
-          selectedPolygonLayerId ===
+          selectedPolygon.layerId ===
           (polygonLayer as unknown as { _leaflet_id: number })._leaflet_id
         ) {
           polygonLayer.enableEdit();
@@ -84,15 +85,15 @@ const LeafletEditTools = ({ polygons = [] }: LeafletEditToolsProps) => {
           positions={polygon}
           eventHandlers={{
             click: (leafletEvent: LeafletEvent) => {
-              setSelectedPolygonLayerId(leafletEvent.target._leaflet_id);
-              console.log("leafletEvent:", leafletEvent.target._leaflet_id);
+              setSelectedPolygon({
+                polygon: polygon,
+                layerId: leafletEvent.target._leaflet_id,
+              });
             },
           }}
-          pathOptions={
-            {
-              // color: selectedPolygonLayerId === index ? "red" : "blue",
-            }
-          }
+          pathOptions={{
+            color: selectedPolygon.polygon === polygon ? "red" : "blue",
+          }}
         />
       ))}
     </>
