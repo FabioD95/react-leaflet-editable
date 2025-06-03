@@ -23,6 +23,14 @@ const LeafletEditTools = ({ polygons = [] }: LeafletEditToolsProps) => {
     layerId: number | null;
   }>({ polygon: null, layerId: null });
 
+  // Stato per tracciare i poligoni creati dinamicamente
+  const [createdPolygons, setCreatedPolygons] = useState<LatLngExpression[][]>(
+    []
+  );
+
+  // Stato per tracciare se stiamo disegnando
+  const [isDrawing, setIsDrawing] = useState(false);
+
   // Create a LayerGroup to hold the polygons
   const polygonLayerGroup = useRef<LayerGroup | null>(null);
 
@@ -37,17 +45,60 @@ const LeafletEditTools = ({ polygons = [] }: LeafletEditToolsProps) => {
 
     // Setup eventi Leaflet.Editable
     if (map.editTools) {
+      const onDrawingStart = (e: LeafletEvent) => {
+        console.log("🎨 Inizio disegno", e);
+        setIsDrawing(true);
+      };
+
       const onDrawingEnd = (e: LeafletEvent) => {
         console.log("✅ Disegno completato", e);
-        // Aggiungi automaticamente il nuovo layer al gruppo
-        if (e.layer && polygonLayerGroup.current) {
-          polygonLayerGroup.current.addLayer(e.layer);
+
+        setIsDrawing(false);
+
+        if (map.editTools && map.editTools.featuresLayer) {
+          const layers = map.editTools.featuresLayer.getLayers();
+
+          if (layers.length > 0) {
+            const lastLayer = layers[layers.length - 1];
+            // console.log("Ultimo layer:", lastLayer);
+
+            if (lastLayer instanceof L.Polygon) {
+              const latlngs = lastLayer.getLatLngs()[0] as L.LatLng[];
+              const coordinates: LatLngExpression[] = latlngs.map((latlng) => [
+                latlng.lat,
+                latlng.lng,
+              ]);
+
+              setCreatedPolygons((prev) => [...prev, coordinates]);
+
+              setSelectedPolygon({
+                polygon: coordinates,
+                layerId: lastLayer._leaflet_id,
+              });
+
+              setTimeout(() => {
+                if (typeof (lastLayer as any).disableEdit === "function") {
+                  (lastLayer as any).disableEdit();
+                }
+              }, 100);
+            }
+          }
         }
       };
 
+      const onDrawingCancel = (e: LeafletEvent) => {
+        console.log("❌ Disegno cancellato", e);
+        setIsDrawing(false);
+      };
+
+      map.on("editable:drawing:start", onDrawingStart);
       map.on("editable:drawing:end", onDrawingEnd);
+      map.on("editable:drawing:cancel", onDrawingCancel);
+
       return () => {
+        map.off("editable:drawing:start", onDrawingStart);
         map.off("editable:drawing:end", onDrawingEnd);
+        map.off("editable:drawing:cancel", onDrawingCancel);
       };
     }
   }, [map]);
@@ -70,12 +121,21 @@ const LeafletEditTools = ({ polygons = [] }: LeafletEditToolsProps) => {
       console.warn("Condizioni per l'editing non soddisfatte");
       return;
     }
-    const layer = polygonLayerGroup.current.getLayer(selectedPolygon.layerId);
-    // console.log("Layer trovato:", layer);
-    if (layer && layer instanceof L.Polyline) {
-      // Verifica che il layer abbia le funzionalità di editing
-      layer.enableEdit();
-      //   console.log("✏️ Editing abilitato per layer:", selectedPolygon.layerId);
+
+    try {
+      const layer = polygonLayerGroup.current.getLayer(selectedPolygon.layerId);
+      if (layer && layer instanceof L.Polygon) {
+        const editableLayer = layer as L.Polygon & EditableMixin;
+        if (typeof editableLayer.enableEdit === "function") {
+          editableLayer.enableEdit();
+          console.log(
+            "✏️ Editing abilitato per layer:",
+            selectedPolygon.layerId
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Errore durante l'abilitazione dell'editing:", error);
     }
   };
 
@@ -120,6 +180,14 @@ const LeafletEditTools = ({ polygons = [] }: LeafletEditToolsProps) => {
 
         // Rimuovi dal gruppo e dalla mappa
         polygonLayerGroup.current.removeLayer(selectedPolygon.layerId);
+
+        // Rimuovi anche dallo stato dei poligoni creati
+        if (selectedPolygon.polygon) {
+          setCreatedPolygons((prev) =>
+            prev.filter((poly) => poly !== selectedPolygon.polygon)
+          );
+        }
+
         setSelectedPolygon({ polygon: null, layerId: null });
         console.log("🗑️ Poligono eliminato:", selectedPolygon.layerId);
       }
@@ -135,6 +203,17 @@ const LeafletEditTools = ({ polygons = [] }: LeafletEditToolsProps) => {
     // Questo creerà un poligono nel featuresLayer che è automaticamente editabile
     map.editTools.startPolygon();
   };
+
+  // Funzione per cancellare il disegno corrente
+  const cancelDrawing = () => {
+    if (!map || !map.editTools) return;
+
+    map.editTools.stopDrawing();
+    setIsDrawing(false);
+  };
+
+  // Combina i poligoni iniziali con quelli creati dinamicamente
+  const allPolygons = [...polygons, ...createdPolygons];
 
   return (
     <>
@@ -159,78 +238,123 @@ const LeafletEditTools = ({ polygons = [] }: LeafletEditToolsProps) => {
       >
         <h2 style={{ alignSelf: "center", margin: 0 }}>Leaflet Edit Tools</h2>
 
+        {/* Stato corrente */}
+        <div style={{ fontSize: "12px", color: "#666", width: "100%" }}>
+          {isDrawing && <p>🎨 Disegnando... (click per terminare)</p>}
+          {selectedPolygon.layerId && (
+            <p>✅ Selezionato: Layer {selectedPolygon.layerId}</p>
+          )}
+        </div>
+
         <button
           onClick={createEditablePolygon}
+          disabled={isDrawing}
           style={{
             padding: "10px",
-            backgroundColor: "#2196F3",
+            backgroundColor: isDrawing ? "#ccc" : "#2196F3",
             color: "white",
             border: "none",
             borderRadius: "5px",
-            cursor: "pointer",
+            cursor: isDrawing ? "not-allowed" : "pointer",
             width: "100%",
           }}
         >
           🖊️ Disegna Poligono Editabile
         </button>
+
+        {isDrawing && (
+          <button
+            onClick={cancelDrawing}
+            style={{
+              padding: "10px",
+              backgroundColor: "#f44336",
+              color: "white",
+              border: "none",
+              borderRadius: "5px",
+              cursor: "pointer",
+              width: "100%",
+            }}
+          >
+            ❌ Annulla Disegno
+          </button>
+        )}
+
         <button
           onClick={startEditing}
+          disabled={!selectedPolygon.layerId || isDrawing}
           style={{
             padding: "10px",
-            backgroundColor: selectedPolygon.layerId ? "#4CAF50" : "#ccc",
+            backgroundColor:
+              selectedPolygon.layerId && !isDrawing ? "#4CAF50" : "#ccc",
             color: "white",
             border: "none",
             borderRadius: "5px",
-            cursor: selectedPolygon.layerId ? "pointer" : "not-allowed",
+            cursor:
+              selectedPolygon.layerId && !isDrawing ? "pointer" : "not-allowed",
             width: "100%",
           }}
         >
           ✏️ Modifica Poligono
         </button>
+
         <button
           onClick={stopEditing}
-          disabled={!selectedPolygon.layerId}
+          disabled={!selectedPolygon.layerId || isDrawing}
           style={{
             padding: "10px",
-            backgroundColor: selectedPolygon.layerId ? "#FF9800" : "#ccc",
+            backgroundColor:
+              selectedPolygon.layerId && !isDrawing ? "#FF9800" : "#ccc",
             color: "white",
             border: "none",
             borderRadius: "5px",
-            cursor: selectedPolygon.layerId ? "pointer" : "not-allowed",
+            cursor:
+              selectedPolygon.layerId && !isDrawing ? "pointer" : "not-allowed",
             width: "100%",
           }}
         >
           ⏹️ Stop Editing
         </button>
+
         <button
           onClick={deletePolygon}
-          disabled={!selectedPolygon.layerId}
+          disabled={!selectedPolygon.layerId || isDrawing}
           style={{
             padding: "10px",
-            backgroundColor: selectedPolygon.layerId ? "#f44336" : "#ccc",
+            backgroundColor:
+              selectedPolygon.layerId && !isDrawing ? "#f44336" : "#ccc",
             color: "white",
             border: "none",
             borderRadius: "5px",
-            cursor: selectedPolygon.layerId ? "pointer" : "not-allowed",
+            cursor:
+              selectedPolygon.layerId && !isDrawing ? "pointer" : "not-allowed",
             width: "100%",
           }}
         >
           🗑️ Elimina Poligono
         </button>
+
+        {/* Info sui poligoni */}
+        <div style={{ fontSize: "12px", color: "#666", width: "100%" }}>
+          <p>Poligoni totali: {allPolygons.length}</p>
+          <p>Poligoni creati: {createdPolygons.length}</p>
+        </div>
       </div>
-      {polygons.map((polygon, index) => (
+
+      {allPolygons.map((polygon, index) => (
         <Polygon
-          key={index}
+          key={`polygon-${index}`}
           positions={polygon}
           eventHandlers={{
             add: (leafletEvent: LeafletEvent) => {
               addLayerToGroup(leafletEvent.target);
             },
             click: (leafletEvent: LeafletEvent) => {
-              setSelectedPolygon({
-                polygon: polygon,
-                layerId: leafletEvent.target._leaflet_id,
-              });
+              if (!isDrawing) {
+                setSelectedPolygon({
+                  polygon: polygon,
+                  layerId: leafletEvent.target._leaflet_id,
+                });
+              }
             },
           }}
           pathOptions={{
