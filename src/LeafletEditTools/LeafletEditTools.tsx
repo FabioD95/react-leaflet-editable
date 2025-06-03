@@ -52,36 +52,29 @@ const LeafletEditTools = ({ polygons = [] }: LeafletEditToolsProps) => {
 
       const onDrawingEnd = (e: LeafletEvent) => {
         console.log("✅ Disegno completato", e);
-
         setIsDrawing(false);
 
-        if (map.editTools && map.editTools.featuresLayer) {
-          const layers = map.editTools.featuresLayer.getLayers();
+        // Aggiungi automaticamente il nuovo layer al gruppo
+        if (e.layer) {
+          // Estrai le coordinate e aggiungile allo stato
+          if (e.layer instanceof L.Polygon) {
+            const latlngs = e.layer.getLatLngs()[0] as L.LatLng[];
+            const coordinates: LatLngExpression[] = latlngs.map((latlng) => [
+              latlng.lat,
+              latlng.lng,
+            ]);
 
-          if (layers.length > 0) {
-            const lastLayer = layers[layers.length - 1];
-            // console.log("Ultimo layer:", lastLayer);
+            setCreatedPolygons((prev) => [...prev, coordinates]);
 
-            if (lastLayer instanceof L.Polygon) {
-              const latlngs = lastLayer.getLatLngs()[0] as L.LatLng[];
-              const coordinates: LatLngExpression[] = latlngs.map((latlng) => [
-                latlng.lat,
-                latlng.lng,
-              ]);
-
-              setCreatedPolygons((prev) => [...prev, coordinates]);
-
-              setSelectedPolygon({
-                polygon: coordinates,
-                layerId: lastLayer._leaflet_id,
-              });
-
-              setTimeout(() => {
-                if (typeof (lastLayer as any).disableEdit === "function") {
-                  (lastLayer as any).disableEdit();
-                }
-              }, 100);
-            }
+            // Disabilita automaticamente l'editing dopo la creazione
+            setTimeout(() => {
+              if (
+                e.layer &&
+                typeof (e.layer as any).disableEdit === "function"
+              ) {
+                (e.layer as any).disableEdit();
+              }
+            }, 100);
           }
         }
       };
