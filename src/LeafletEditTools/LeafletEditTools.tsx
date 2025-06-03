@@ -54,28 +54,24 @@ const LeafletEditTools = ({ polygons = [] }: LeafletEditToolsProps) => {
         console.log("✅ Disegno completato", e);
         setIsDrawing(false);
 
-        // Aggiungi automaticamente il nuovo layer al gruppo
-        if (e.layer) {
-          // Estrai le coordinate e aggiungile allo stato
-          if (e.layer instanceof L.Polygon) {
-            const latlngs = e.layer.getLatLngs()[0] as L.LatLng[];
-            const coordinates: LatLngExpression[] = latlngs.map((latlng) => [
-              latlng.lat,
-              latlng.lng,
-            ]);
+        const layer = e.layer;
 
-            setCreatedPolygons((prev) => [...prev, coordinates]);
+        // Estrai le coordinate e aggiungile allo stato
+        if (layer && layer instanceof L.Polygon) {
+          const latlngs = layer.getLatLngs()[0] as L.LatLng[];
+          const coordinates: LatLngExpression[] = latlngs.map((latlng) => [
+            latlng.lat,
+            latlng.lng,
+          ]);
 
-            // Disabilita automaticamente l'editing dopo la creazione
-            setTimeout(() => {
-              if (
-                e.layer &&
-                typeof (e.layer as any).disableEdit === "function"
-              ) {
-                (e.layer as any).disableEdit();
-              }
-            }, 100);
-          }
+          setCreatedPolygons((prev) => [...prev, coordinates]);
+
+          // Disabilita automaticamente l'editing dopo la creazione
+          setTimeout(() => {
+            if (layer && typeof layer.disableEdit === "function") {
+              layer.disableEdit();
+            }
+          }, 100);
         }
       };
 
