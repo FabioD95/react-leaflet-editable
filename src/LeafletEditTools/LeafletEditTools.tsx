@@ -4,6 +4,7 @@ import type {
   Layer,
   LeafletEvent,
   LayerGroup,
+  EditableMixin,
 } from "leaflet";
 import L from "leaflet";
 import { useEffect, useRef, useState } from "react";
@@ -71,11 +72,68 @@ const LeafletEditTools = ({ polygons = [] }: LeafletEditToolsProps) => {
     }
     const layer = polygonLayerGroup.current.getLayer(selectedPolygon.layerId);
     // console.log("Layer trovato:", layer);
-    if (layer && layer instanceof L.Polygon) {
+    if (layer && layer instanceof L.Polyline) {
       // Verifica che il layer abbia le funzionalità di editing
       layer.enableEdit();
       //   console.log("✏️ Editing abilitato per layer:", selectedPolygon.layerId);
     }
+  };
+
+  // Funzione per fermare l'editing
+  const stopEditing = () => {
+    if (!selectedPolygon.layerId || !polygonLayerGroup.current) return;
+
+    try {
+      const layer = polygonLayerGroup.current.getLayer(selectedPolygon.layerId);
+
+      if (layer && layer instanceof L.Polygon) {
+        const editableLayer = layer as L.Polygon & EditableMixin;
+
+        if (typeof editableLayer.disableEdit === "function") {
+          editableLayer.disableEdit();
+          console.log(
+            "⏹️ Editing disabilitato per layer:",
+            selectedPolygon.layerId
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Errore durante la disabilitazione dell'editing:", error);
+    }
+  };
+
+  // Funzione per eliminare un poligono
+  const deletePolygon = () => {
+    if (!selectedPolygon.layerId || !polygonLayerGroup.current) return;
+
+    try {
+      const layer = polygonLayerGroup.current.getLayer(selectedPolygon.layerId);
+
+      if (layer) {
+        // Prima disabilita l'editing se attivo
+        if (layer instanceof L.Polygon) {
+          const editableLayer = layer as L.Polygon & EditableMixin;
+          if (typeof editableLayer.disableEdit === "function") {
+            editableLayer.disableEdit();
+          }
+        }
+
+        // Rimuovi dal gruppo e dalla mappa
+        polygonLayerGroup.current.removeLayer(selectedPolygon.layerId);
+        setSelectedPolygon({ polygon: null, layerId: null });
+        console.log("🗑️ Poligono eliminato:", selectedPolygon.layerId);
+      }
+    } catch (error) {
+      console.error("Errore durante l'eliminazione:", error);
+    }
+  };
+
+  // Funzione per creare un nuovo poligono editabile
+  const createEditablePolygon = () => {
+    if (!map || !map.editTools) return;
+
+    // Questo creerà un poligono nel featuresLayer che è automaticamente editabile
+    map.editTools.startPolygon();
   };
 
   return (
@@ -99,23 +157,65 @@ const LeafletEditTools = ({ polygons = [] }: LeafletEditToolsProps) => {
           gap: "10px",
         }}
       >
-        <h2 style={{ alignSelf: "center" }}>Leaflet Edit Tools</h2>
+        <h2 style={{ alignSelf: "center", margin: 0 }}>Leaflet Edit Tools</h2>
 
-        <button onClick={() => map.editTools.startPolygon()} style={{}}>
-          Disegna Poligono
+        <button
+          onClick={createEditablePolygon}
+          style={{
+            padding: "10px",
+            backgroundColor: "#2196F3",
+            color: "white",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
+            width: "100%",
+          }}
+        >
+          🖊️ Disegna Poligono Editabile
         </button>
         <button
           onClick={startEditing}
           style={{
             padding: "10px",
-            backgroundColor: "#4CAF50",
+            backgroundColor: selectedPolygon.layerId ? "#4CAF50" : "#ccc",
             color: "white",
             border: "none",
             borderRadius: "5px",
-            cursor: "pointer",
+            cursor: selectedPolygon.layerId ? "pointer" : "not-allowed",
+            width: "100%",
           }}
         >
           ✏️ Modifica Poligono
+        </button>
+        <button
+          onClick={stopEditing}
+          disabled={!selectedPolygon.layerId}
+          style={{
+            padding: "10px",
+            backgroundColor: selectedPolygon.layerId ? "#FF9800" : "#ccc",
+            color: "white",
+            border: "none",
+            borderRadius: "5px",
+            cursor: selectedPolygon.layerId ? "pointer" : "not-allowed",
+            width: "100%",
+          }}
+        >
+          ⏹️ Stop Editing
+        </button>
+        <button
+          onClick={deletePolygon}
+          disabled={!selectedPolygon.layerId}
+          style={{
+            padding: "10px",
+            backgroundColor: selectedPolygon.layerId ? "#f44336" : "#ccc",
+            color: "white",
+            border: "none",
+            borderRadius: "5px",
+            cursor: selectedPolygon.layerId ? "pointer" : "not-allowed",
+            width: "100%",
+          }}
+        >
+          🗑️ Elimina Poligono
         </button>
       </div>
       {polygons.map((polygon, index) => (
@@ -135,6 +235,9 @@ const LeafletEditTools = ({ polygons = [] }: LeafletEditToolsProps) => {
           }}
           pathOptions={{
             color: selectedPolygon.polygon === polygon ? "red" : "blue",
+            weight: selectedPolygon.polygon === polygon ? 3 : 2,
+            opacity: selectedPolygon.polygon === polygon ? 1 : 0.7,
+            fillOpacity: selectedPolygon.polygon === polygon ? 0.3 : 0.2,
           }}
         />
       ))}
