@@ -3,6 +3,7 @@ import "leaflet/dist/leaflet.css";
 import type { LatLngExpression } from "leaflet";
 import "leaflet-editable";
 import LeafletEditTools from "./LeafletEditTools/LeafletEditTools";
+import LeafletEditTools2 from "./LeafletEditTools/LeafletEditTools2";
 
 const polygons: LatLngExpression[][] = [
   [
@@ -32,7 +33,8 @@ function App() {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
-      <LeafletEditTools polygons={polygons} />
+      {/* <LeafletEditTools polygons={polygons} /> */}
+      <LeafletEditTools2 />
     </MapContainer>
   );
 }
