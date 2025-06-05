@@ -22,6 +22,11 @@ const LeafletEditTools = () => {
 
         // Estrai le coordinate e aggiungile allo stato
         if (layer && layer instanceof L.Polygon) {
+          // Aggiungi evento click al poligono per selezionarlo
+          layer.on("click", () => {
+            enablePolygonEditing(layer);
+          });
+
           // Disabilita automaticamente l'editing dopo la creazione
           setTimeout(() => {
             if (layer && typeof layer.disableEdit === "function") {
@@ -45,6 +50,13 @@ const LeafletEditTools = () => {
     if (!map || !map.editTools) return;
 
     map.editTools.startPolygon();
+  };
+
+  // Funzione per abilitare l'editing di un poligono esistente
+  const enablePolygonEditing = (polygon: L.Polygon) => {
+    if (typeof polygon.enableEdit === "function") {
+      polygon.enableEdit();
+    }
   };
 
   return (
