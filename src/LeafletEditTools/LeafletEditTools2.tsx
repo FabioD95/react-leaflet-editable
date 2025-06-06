@@ -20,19 +20,12 @@ const LeafletEditTools = () => {
 
         const layer = e.layer;
 
-        // Estrai le coordinate e aggiungile allo stato
         if (layer && layer instanceof L.Polygon) {
-          // Aggiungi evento click al poligono per selezionarlo
           layer.on("click", () => {
             enablePolygonEditing(layer);
           });
 
-          // Disabilita automaticamente l'editing dopo la creazione
-          setTimeout(() => {
-            if (layer && typeof layer.disableEdit === "function") {
-              layer.disableEdit();
-            }
-          }, 100);
+          layer.disableEdit();
         }
       };
 
