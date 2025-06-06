@@ -6,6 +6,7 @@ import DisableAllEditing from "../Buttons/DisableAllEditing";
 import DeletePolygon from "../Buttons/DeletePolygon";
 import SavePolygons from "../Buttons/SavePolygons";
 import { EDITOR_PANEL_STYLES } from "../constants/styles";
+import type { PolygonState } from "../types";
 
 interface EditorPanelProps {
   isVisible: boolean;
@@ -13,7 +14,7 @@ interface EditorPanelProps {
   map: L.Map;
   editablePolygons: L.Polygon[];
   currentEditingPolygon: L.Polygon | null;
-  polygonStates: Map<L.Polygon, any>;
+  polygonStates: Map<L.Polygon, PolygonState>;
   removePolygon: (polygon: L.Polygon) => void;
   getChangedPolygons: () => L.Polygon[];
   resetModificationFlags: () => void;

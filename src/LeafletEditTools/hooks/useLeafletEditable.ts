@@ -1,12 +1,6 @@
 import L from "leaflet";
 import { useState, useCallback } from "react";
-
-interface PolygonState {
-  polygon: L.Polygon;
-  isNew: boolean;
-  isModified: boolean;
-  originalCoordinates?: L.LatLng[];
-}
+import type { PolygonState } from "../types";
 
 export const useLeafletEditable = (map: L.Map | undefined) => {
   const [editablePolygons, setEditablePolygons] = useState<L.Polygon[]>([]);
@@ -101,7 +95,7 @@ export const useLeafletEditable = (map: L.Map | undefined) => {
   const resetModificationFlags = useCallback(() => {
     setPolygonStates((prev) => {
       const newMap = new Map();
-      prev.forEach((state, polygon) => {
+      prev.forEach((_, polygon) => {
         const coordinates = polygon.getLatLngs();
         const flatCoords = Array.isArray(coordinates[0])
           ? (coordinates[0] as L.LatLng[])

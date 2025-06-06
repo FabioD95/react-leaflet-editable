@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import L from "leaflet";
 import { BUTTON_VARIANTS } from "../constants/styles";
+import type { PolygonState } from "../types";
 
 interface SavePolygonsProps {
   getChangedPolygons: () => L.Polygon[];
   resetModificationFlags: () => void;
-  polygonStates: Map<L.Polygon, any>;
+  polygonStates: Map<L.Polygon, PolygonState>;
   onSavePolygons?: (polygons: L.LatLng[][]) => Promise<void> | void;
 }
 

@@ -1,15 +1,11 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useMap } from "react-leaflet";
 import EnableEditor from "./Buttons/EnableEditor";
 import EditorPanel from "./components/EditorPanel";
 import { useLeafletEditable } from "./hooks/useLeafletEditable";
 import { useEditorVisibility } from "./hooks/useEditorVisibility";
+import type { LeafletEditToolsProps } from "./types";
 import L from "leaflet";
-
-interface LeafletEditToolsProps {
-  children: React.ReactNode;
-  onSavePolygons?: (polygons: L.LatLng[][]) => Promise<void> | void;
-}
 
 const LeafletEditTools = ({
   children,
