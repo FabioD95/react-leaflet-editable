@@ -35,10 +35,13 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
 }) => {
   const changedPolygons = getChangedPolygons();
   const newCount = Array.from(polygonStates.values()).filter(
-    (s) => s.isNew
+    (s) => s.isNew && !s.isDeleted
   ).length;
   const modifiedCount = Array.from(polygonStates.values()).filter(
-    (s) => s.isModified
+    (s) => s.isModified && !s.isDeleted
+  ).length;
+  const deletedCount = Array.from(polygonStates.values()).filter(
+    (s) => s.isDeleted
   ).length;
 
   return (
@@ -101,6 +104,12 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
           • Modificati:{" "}
           <span style={{ color: modifiedCount > 0 ? "#FF9800" : "#666" }}>
             {modifiedCount}
+          </span>
+        </p>
+        <p>
+          • Eliminati:{" "}
+          <span style={{ color: deletedCount > 0 ? "#F44336" : "#666" }}>
+            {deletedCount}
           </span>
         </p>
         <p>

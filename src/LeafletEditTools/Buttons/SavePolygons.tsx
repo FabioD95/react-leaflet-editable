@@ -33,32 +33,38 @@ const SavePolygons: React.FC<SavePolygonsProps> = ({
       // Separa i poligoni per tipo
       const newPolygons: L.LatLng[][] = [];
       const modifiedPolygons: { id: string; coordinates: L.LatLng[] }[] = [];
-      const deletedPolygons: string[] = [];
+      const deletedPolygons: { id: string; coordinates: L.LatLng[] }[] = [];
 
-      // Elabora i poligoni modificati e nuovi
+      // Elabora tutti i poligoni cambiati
       changedPolygons.forEach((polygon) => {
         const state = polygonStates.get(polygon);
         if (!state) return;
 
-        const latLngs = polygon.getLatLngs();
-        const coordinates = Array.isArray(latLngs[0])
-          ? (latLngs[0] as L.LatLng[])
-          : (latLngs as L.LatLng[]);
-
-        if (state.isNew) {
+        if (state.isDeleted) {
+          // Poligono eliminato - usa le coordinate originali
+          if (state.id && state.originalCoordinates) {
+            deletedPolygons.push({
+              id: state.id,
+              coordinates: state.originalCoordinates,
+            });
+          }
+        } else if (state.isNew) {
+          // Poligono nuovo
+          const latLngs = polygon.getLatLngs();
+          const coordinates = Array.isArray(latLngs[0])
+            ? (latLngs[0] as L.LatLng[])
+            : (latLngs as L.LatLng[]);
           newPolygons.push(coordinates);
         } else if (state.isModified) {
+          // Poligono modificato - usa le coordinate correnti
+          const latLngs = polygon.getLatLngs();
+          const coordinates = Array.isArray(latLngs[0])
+            ? (latLngs[0] as L.LatLng[])
+            : (latLngs as L.LatLng[]);
           modifiedPolygons.push({
             id: state.id || `polygon-${polygon._leaflet_id}`,
             coordinates: coordinates,
           });
-        }
-      });
-
-      // Aggiungi i poligoni eliminati (se hai un meccanismo per tracciarli)
-      polygonStates.forEach((state) => {
-        if (state.isDeleted && state.id) {
-          deletedPolygons.push(state.id);
         }
       });
 
@@ -90,10 +96,10 @@ const SavePolygons: React.FC<SavePolygonsProps> = ({
 
   const changedPolygons = getChangedPolygons();
   const newCount = Array.from(polygonStates.values()).filter(
-    (s) => s.isNew
+    (s) => s.isNew && !s.isDeleted
   ).length;
   const modifiedCount = Array.from(polygonStates.values()).filter(
-    (s) => s.isModified
+    (s) => s.isModified && !s.isDeleted
   ).length;
   const deletedCount = Array.from(polygonStates.values()).filter(
     (s) => s.isDeleted
@@ -131,9 +137,10 @@ const SavePolygons: React.FC<SavePolygonsProps> = ({
           {changedPolygons.length > 0 && (
             <div style={{ fontSize: "11px", marginTop: "2px" }}>
               {newCount > 0 && `${newCount} nuovi`}
-              {newCount > 0 && modifiedCount > 0 && " • "}
+              {newCount > 0 && (modifiedCount > 0 || deletedCount > 0) && " • "}
               {modifiedCount > 0 && `${modifiedCount} modificati`}
-              {deletedCount > 0 && ` • ${deletedCount} eliminati`}
+              {(newCount > 0 || modifiedCount > 0) && deletedCount > 0 && " • "}
+              {deletedCount > 0 && `${deletedCount} eliminati`}
             </div>
           )}
         </>

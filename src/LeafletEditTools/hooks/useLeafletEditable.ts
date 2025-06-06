@@ -19,6 +19,7 @@ export const useLeafletEditable = (map: L.Map | undefined) => {
         polygon,
         isNew: true,
         isModified: false,
+        id: `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       });
       return newMap;
     });
@@ -41,6 +42,7 @@ export const useLeafletEditable = (map: L.Map | undefined) => {
             isNew: false,
             isModified: false,
             originalCoordinates: [...flatCoords], // Copia delle coordinate originali
+            id: `existing-${polygon._leaflet_id}`,
           });
           return newMap;
         });
@@ -64,49 +66,74 @@ export const useLeafletEditable = (map: L.Map | undefined) => {
     });
   }, []);
 
-  // Funzione per ottenere solo i poligoni nuovi o modificati
+  // Funzione per ottenere solo i poligoni nuovi, modificati o eliminati
   const getChangedPolygons = useCallback(() => {
     const changedPolygons: L.Polygon[] = [];
     polygonStates.forEach((state, polygon) => {
-      if (state.isNew || state.isModified) {
+      if (state.isNew || state.isModified || state.isDeleted) {
         changedPolygons.push(polygon);
       }
     });
     return changedPolygons;
   }, [polygonStates]);
 
-  // Funzione per rimuovere un poligono
+  // Funzione per rimuovere/marcare come eliminato un poligono
   const removePolygon = useCallback(
     (polygon: L.Polygon) => {
-      setEditablePolygons((prev) => prev.filter((p) => p !== polygon));
-      setPolygonStates((prev) => {
-        const newMap = new Map(prev);
-        newMap.delete(polygon);
-        return newMap;
-      });
+      const state = polygonStates.get(polygon);
+
+      if (state?.isNew) {
+        // Se è un poligono nuovo, rimuovilo completamente
+        setEditablePolygons((prev) => prev.filter((p) => p !== polygon));
+        setPolygonStates((prev) => {
+          const newMap = new Map(prev);
+          newMap.delete(polygon);
+          return newMap;
+        });
+      } else {
+        // Se è un poligono esistente, marcalo come eliminato
+        setPolygonStates((prev) => {
+          const newMap = new Map(prev);
+          const currentState = newMap.get(polygon);
+          if (currentState) {
+            newMap.set(polygon, {
+              ...currentState,
+              isDeleted: true,
+            });
+          }
+          return newMap;
+        });
+        // Rimuovi dalla lista dei poligoni editabili ma mantieni lo stato
+        setEditablePolygons((prev) => prev.filter((p) => p !== polygon));
+      }
+
       if (currentEditingPolygon === polygon) {
         setCurrentEditingPolygon(null);
       }
     },
-    [currentEditingPolygon]
+    [currentEditingPolygon, polygonStates]
   );
 
   // Funzione per resettare i flag di modifica dopo il salvataggio
   const resetModificationFlags = useCallback(() => {
     setPolygonStates((prev) => {
       const newMap = new Map();
-      prev.forEach((_, polygon) => {
-        const coordinates = polygon.getLatLngs();
-        const flatCoords = Array.isArray(coordinates[0])
-          ? (coordinates[0] as L.LatLng[])
-          : (coordinates as L.LatLng[]);
+      prev.forEach((state, polygon) => {
+        // Rimuovi completamente i poligoni eliminati dopo il salvataggio
+        if (!state.isDeleted) {
+          const coordinates = polygon.getLatLngs();
+          const flatCoords = Array.isArray(coordinates[0])
+            ? (coordinates[0] as L.LatLng[])
+            : (coordinates as L.LatLng[]);
 
-        newMap.set(polygon, {
-          polygon,
-          isNew: false,
-          isModified: false,
-          originalCoordinates: [...flatCoords], // Aggiorna le coordinate originali
-        });
+          newMap.set(polygon, {
+            polygon,
+            isNew: false,
+            isModified: false,
+            originalCoordinates: [...flatCoords], // Aggiorna le coordinate originali
+            id: state.id,
+          });
+        }
       });
       return newMap;
     });

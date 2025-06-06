@@ -12,7 +12,7 @@ export interface PolygonState {
 export interface PolygonSaveData {
   newPolygons: L.LatLng[][];
   modifiedPolygons: { id: string; coordinates: L.LatLng[] }[];
-  deletedPolygons: string[];
+  deletedPolygons: { id: string; coordinates: L.LatLng[] }[];
 }
 
 export interface LeafletEditToolsProps {
