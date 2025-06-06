@@ -27,7 +27,7 @@ function App() {
       center={[51.505, -0.09]}
       zoom={14}
       style={{ height: "100vh" }}
-      editable={true}
+      // editable={true}
     >
       {/* <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

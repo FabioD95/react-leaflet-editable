@@ -9,10 +9,16 @@ const LeafletEditTools = ({ children }: { children: React.ReactNode }) => {
   const [editablePolygons, setEditablePolygons] = useState<L.Polygon[]>([]);
 
   useEffect(() => {
-    if (!map || !map.editTools) return;
+    if (!map) return;
 
-    // Setup eventi Leaflet.Editable
-    if (map.editTools) {
+    if (isEditorVisible) {
+      // Attiva la modalità editable se non è già attiva
+      if (!map.editTools) {
+        map.editTools = new L.Editable(map);
+        console.log("🔧 Leaflet.Editable inizializzato");
+      }
+
+      // Setup eventi Leaflet.Editable
       const onDrawingStart = (e: L.LeafletEvent) => {
         console.log("🎨 Inizio disegno", e);
       };
@@ -39,12 +45,15 @@ const LeafletEditTools = ({ children }: { children: React.ReactNode }) => {
         map.off("editable:drawing:start", onDrawingStart);
         map.off("editable:drawing:end", onDrawingEnd);
       };
+    } else {
+      // Quando l'editor è nascosto, disabilita l'editing di tutti i poligoni
+      disableAllEditing();
     }
-  }, [map]);
+  }, [map, isEditorVisible]);
 
   // Funzione per rendere editabili i poligoni esistenti
   useEffect(() => {
-    if (!map || !map.editTools) return;
+    if (!map || !map.editTools || !isEditorVisible) return;
 
     // Funzione per registrare un poligono esistente
     const registerExistingPolygon = (layer: L.Polygon) => {
@@ -62,7 +71,7 @@ const LeafletEditTools = ({ children }: { children: React.ReactNode }) => {
         registerExistingPolygon(layer);
       }
     });
-  }, [map, editablePolygons]);
+  }, [map, editablePolygons, isEditorVisible]);
 
   const createEditablePolygon = () => {
     if (!map || !map.editTools) return;
