@@ -12,11 +12,11 @@ interface EditorPanelProps {
   setIsEditorVisible: React.Dispatch<React.SetStateAction<boolean>>;
   map: L.Map;
   editablePolygons: L.Polygon[];
-  setEditablePolygons: React.Dispatch<React.SetStateAction<L.Polygon[]>>;
   currentEditingPolygon: L.Polygon | null;
-  setCurrentEditingPolygon: React.Dispatch<
-    React.SetStateAction<L.Polygon | null>
-  >;
+  polygonStates: Map<L.Polygon, any>;
+  removePolygon: (polygon: L.Polygon) => void;
+  getChangedPolygons: () => L.Polygon[];
+  resetModificationFlags: () => void;
   onSavePolygons?: (polygons: L.LatLng[][]) => Promise<void> | void;
 }
 
@@ -25,11 +25,21 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
   setIsEditorVisible,
   map,
   editablePolygons,
-  setEditablePolygons,
   currentEditingPolygon,
-  setCurrentEditingPolygon,
+  polygonStates,
+  removePolygon,
+  getChangedPolygons,
+  resetModificationFlags,
   onSavePolygons,
 }) => {
+  const changedPolygons = getChangedPolygons();
+  const newCount = Array.from(polygonStates.values()).filter(
+    (s) => s.isNew
+  ).length;
+  const modifiedCount = Array.from(polygonStates.values()).filter(
+    (s) => s.isModified
+  ).length;
+
   return (
     <div
       style={{
@@ -44,9 +54,8 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
       <CreateEditablePolygon map={map} />
       <DisableAllEditing editablePolygons={editablePolygons} />
       <DeletePolygon
-        setEditablePolygons={setEditablePolygons}
+        removePolygon={removePolygon}
         currentEditingPolygon={currentEditingPolygon}
-        setCurrentEditingPolygon={setCurrentEditingPolygon}
       />
 
       {/* Separatore visivo */}
@@ -61,7 +70,9 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
 
       {/* Sezione di salvataggio */}
       <SavePolygons
-        editablePolygons={editablePolygons}
+        getChangedPolygons={getChangedPolygons}
+        resetModificationFlags={resetModificationFlags}
+        polygonStates={polygonStates}
         onSavePolygons={onSavePolygons}
       />
 
@@ -74,15 +85,41 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
           marginTop: "auto",
         }}
       >
-        <p>Poligoni totali: {editablePolygons.length}</p>
-        <p>In editing: {currentEditingPolygon ? "1" : "0"}</p>
+        <p>
+          📊 <strong>Statistiche:</strong>
+        </p>
+        <p>• Poligoni totali: {editablePolygons.length}</p>
+        <p>• In editing: {currentEditingPolygon ? "1" : "0"}</p>
+        <p>
+          • Nuovi:{" "}
+          <span style={{ color: newCount > 0 ? "#4CAF50" : "#666" }}>
+            {newCount}
+          </span>
+        </p>
+        <p>
+          • Modificati:{" "}
+          <span style={{ color: modifiedCount > 0 ? "#FF9800" : "#666" }}>
+            {modifiedCount}
+          </span>
+        </p>
+        <p>
+          • Da salvare:{" "}
+          <span
+            style={{ color: changedPolygons.length > 0 ? "#007bff" : "#666" }}
+          >
+            {changedPolygons.length}
+          </span>
+        </p>
+
         {currentEditingPolygon && (
-          <p style={{ color: "#007bff", fontWeight: "bold" }}>
+          <p
+            style={{ color: "#007bff", fontWeight: "bold", marginTop: "10px" }}
+          >
             ✏️ Poligono selezionato per editing
           </p>
         )}
         {onSavePolygons && (
-          <p style={{ color: "#4CAF50", fontSize: "10px" }}>
+          <p style={{ color: "#4CAF50", fontSize: "10px", marginTop: "10px" }}>
             ✓ Funzione di salvataggio configurata
           </p>
         )}

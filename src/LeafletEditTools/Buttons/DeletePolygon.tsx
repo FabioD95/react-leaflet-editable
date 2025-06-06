@@ -2,17 +2,13 @@ import L from "leaflet";
 import { BUTTON_VARIANTS } from "../constants/styles";
 
 interface DeletePolygonProps {
-  setEditablePolygons: React.Dispatch<React.SetStateAction<L.Polygon[]>>;
+  removePolygon: (polygon: L.Polygon) => void;
   currentEditingPolygon: L.Polygon | null;
-  setCurrentEditingPolygon: React.Dispatch<
-    React.SetStateAction<L.Polygon | null>
-  >;
 }
 
 const DeletePolygon: React.FC<DeletePolygonProps> = ({
-  setEditablePolygons,
+  removePolygon,
   currentEditingPolygon,
-  setCurrentEditingPolygon,
 }) => {
   const deleteSelectedPolygon = () => {
     if (currentEditingPolygon) {
@@ -24,13 +20,8 @@ const DeletePolygon: React.FC<DeletePolygonProps> = ({
       // Rimuovi dalla mappa
       currentEditingPolygon.remove();
 
-      // Rimuovi dallo stato
-      setEditablePolygons((prev) =>
-        prev.filter((p) => p !== currentEditingPolygon)
-      );
-
-      // Reset del poligono in editing
-      setCurrentEditingPolygon(null);
+      // Rimuovi dallo stato usando la nuova funzione
+      removePolygon(currentEditingPolygon);
 
       console.log("🗑️ Poligono eliminato");
     } else {

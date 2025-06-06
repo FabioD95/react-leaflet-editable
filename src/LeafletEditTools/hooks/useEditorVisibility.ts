@@ -5,7 +5,7 @@ export const useEditorVisibility = (
   map: L.Map | undefined,
   disableAllEditingAndListeners: () => void,
   enablePolygonEditing: (polygon: L.Polygon) => void,
-  setEditablePolygons: React.Dispatch<React.SetStateAction<L.Polygon[]>>
+  addNewPolygon: (polygon: L.Polygon) => void
 ) => {
   const [isEditorVisible, setIsEditorVisible] = useState(false);
 
@@ -35,7 +35,7 @@ export const useEditorVisibility = (
           });
 
           layer.disableEdit();
-          setEditablePolygons((prev) => [...prev, layer]);
+          addNewPolygon(layer); // Usa la nuova funzione per poligoni nuovi
         }
       };
 
@@ -49,7 +49,13 @@ export const useEditorVisibility = (
     } else {
       disableAllEditingAndListeners();
     }
-  }, [map, isEditorVisible, enablePolygonEditing, disableAllEditingAndListeners, setEditablePolygons]);
+  }, [
+    map,
+    isEditorVisible,
+    enablePolygonEditing,
+    disableAllEditingAndListeners,
+    addNewPolygon,
+  ]);
 
   return { isEditorVisible, setIsEditorVisible };
 };

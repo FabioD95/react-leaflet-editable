@@ -19,19 +19,23 @@ const LeafletEditTools = ({
 
   const {
     editablePolygons,
-    setEditablePolygons,
     currentEditingPolygon,
-    setCurrentEditingPolygon,
+    polygonStates,
+    addExistingPolygon,
+    removePolygon,
+    getChangedPolygons,
+    resetModificationFlags,
     disableAllEditingAndListeners,
     enablePolygonEditing,
     reactivatePolygonListeners,
+    addNewPolygon,
   } = useLeafletEditable(map);
 
   const { isEditorVisible, setIsEditorVisible } = useEditorVisibility(
     map,
     disableAllEditingAndListeners,
     enablePolygonEditing,
-    setEditablePolygons
+    addNewPolygon
   );
 
   // Funzione per rendere editabili i poligoni esistenti
@@ -44,7 +48,7 @@ const LeafletEditTools = ({
         layer.on("click", () => {
           enablePolygonEditing(layer);
         });
-        setEditablePolygons((prev) => [...prev, layer]);
+        addExistingPolygon(layer); // Usa la nuova funzione per poligoni esistenti
       }
     };
 
@@ -58,7 +62,7 @@ const LeafletEditTools = ({
     editablePolygons,
     isEditorVisible,
     enablePolygonEditing,
-    setEditablePolygons,
+    addExistingPolygon,
   ]);
 
   // Riattiva i listener quando l'editor diventa visibile
@@ -80,9 +84,11 @@ const LeafletEditTools = ({
         setIsEditorVisible={setIsEditorVisible}
         map={map}
         editablePolygons={editablePolygons}
-        setEditablePolygons={setEditablePolygons}
         currentEditingPolygon={currentEditingPolygon}
-        setCurrentEditingPolygon={setCurrentEditingPolygon}
+        polygonStates={polygonStates}
+        removePolygon={removePolygon}
+        getChangedPolygons={getChangedPolygons}
+        resetModificationFlags={resetModificationFlags}
         onSavePolygons={onSavePolygons}
       />
     </>
