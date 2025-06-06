@@ -2,6 +2,10 @@ import L from "leaflet";
 import { useEffect, useState } from "react";
 import { useMap } from "react-leaflet";
 import "leaflet-editable";
+import CreateEditablePolygon from "./Buttons/CreateEditablePolygon";
+import DisableAllEditing from "./Buttons/DisableAllEditing";
+import EnableEditor from "./Buttons/EnableEditor";
+import DisableEditor from "./Buttons/DisableEditor";
 
 const LeafletEditTools = ({ children }: { children: React.ReactNode }) => {
   const map = useMap();
@@ -89,26 +93,11 @@ const LeafletEditTools = ({ children }: { children: React.ReactNode }) => {
     }
   }, [isEditorVisible]);
 
-  const createEditablePolygon = () => {
-    if (!map || !map.editTools) return;
-
-    map.editTools.startPolygon();
-  };
-
   // Funzione per abilitare l'editing di un poligono esistente
   const enablePolygonEditing = (polygon: L.Polygon) => {
     if (typeof polygon.enableEdit === "function") {
       polygon.enableEdit();
     }
-  };
-
-  // Funzione per disabilitare l'editing di tutti i poligoni
-  const disableAllEditing = () => {
-    editablePolygons.forEach((polygon) => {
-      if (typeof polygon.disableEdit === "function") {
-        polygon.disableEdit();
-      }
-    });
   };
 
   // Funzione per disabilitare l'editing E rimuovere tutti i listener di click
@@ -148,33 +137,13 @@ const LeafletEditTools = ({ children }: { children: React.ReactNode }) => {
     console.log("🔄 Listener di editing riattivati");
   };
 
-  const toggleEditorVisibility = () => {
-    setIsEditorVisible(!isEditorVisible);
-  };
-
   return (
     <>
       {children}
-
-      <button
-        onClick={toggleEditorVisibility}
-        style={{
-          visibility: !isEditorVisible ? "visible" : "hidden",
-          position: "absolute",
-          top: 10,
-          right: 10,
-          zIndex: 1000,
-          padding: "10px",
-          backgroundColor: "#007bff",
-          color: "white",
-          border: "none",
-          borderRadius: "5px",
-          cursor: "pointer",
-        }}
-      >
-        Attiva Editor
-      </button>
-
+      <EnableEditor
+        isEditorVisible={isEditorVisible}
+        setIsEditorVisible={setIsEditorVisible}
+      />
       <div
         style={{
           visibility: isEditorVisible ? "visible" : "hidden",
@@ -195,61 +164,10 @@ const LeafletEditTools = ({ children }: { children: React.ReactNode }) => {
           gap: "10px",
         }}
       >
-        <button
-          onClick={toggleEditorVisibility}
-          style={{
-            position: "absolute",
-            top: "5px",
-            right: "5px",
-            width: "25px",
-            height: "25px",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            backgroundColor: "#ff4d4d",
-            color: "white",
-            border: "none",
-            borderRadius: "50%",
-            cursor: "pointer",
-            fontSize: "14px",
-            fontWeight: "bold",
-            padding: 0,
-            zIndex: 1001,
-          }}
-        >
-          X
-        </button>
-
         <h2 style={{ alignSelf: "center", margin: 0 }}>Leaflet Edit Tools</h2>
-
-        <button
-          onClick={createEditablePolygon}
-          style={{
-            padding: "10px",
-            color: "white",
-            backgroundColor: "#007bff",
-            border: "none",
-            borderRadius: "5px",
-            width: "100%",
-          }}
-        >
-          🖊️ Disegna Poligono Editabile
-        </button>
-
-        <button
-          onClick={disableAllEditing}
-          style={{
-            padding: "10px",
-            color: "white",
-            backgroundColor: "#dc3545",
-            border: "none",
-            borderRadius: "5px",
-            width: "100%",
-            marginTop: "10px",
-          }}
-        >
-          ✋ Disabilita Editing
-        </button>
+        <DisableEditor setIsEditorVisible={setIsEditorVisible} />
+        <CreateEditablePolygon map={map} />
+        <DisableAllEditing editablePolygons={editablePolygons} />
       </div>
     </>
   );
