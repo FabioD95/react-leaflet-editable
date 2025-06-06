@@ -6,7 +6,7 @@ import DisableAllEditing from "../Buttons/DisableAllEditing";
 import DeletePolygon from "../Buttons/DeletePolygon";
 import SavePolygons from "../Buttons/SavePolygons";
 import { EDITOR_PANEL_STYLES } from "../constants/styles";
-import type { PolygonState } from "../types";
+import type { PolygonSaveData, PolygonState } from "../types";
 
 interface EditorPanelProps {
   isVisible: boolean;
@@ -18,7 +18,7 @@ interface EditorPanelProps {
   removePolygon: (polygon: L.Polygon) => void;
   getChangedPolygons: () => L.Polygon[];
   resetModificationFlags: () => void;
-  onSavePolygons?: (polygons: L.LatLng[][]) => Promise<void> | void;
+  onSavePolygons?: (data: PolygonSaveData) => Promise<void> | void; // Aggiornato qui
 }
 
 const EditorPanel: React.FC<EditorPanelProps> = ({

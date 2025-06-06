@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import L from "leaflet";
 import { BUTTON_VARIANTS } from "../constants/styles";
-import type { PolygonState } from "../types";
+import type { PolygonState, PolygonSaveData } from "../types";
 
 interface SavePolygonsProps {
   getChangedPolygons: () => L.Polygon[];
   resetModificationFlags: () => void;
   polygonStates: Map<L.Polygon, PolygonState>;
-  onSavePolygons?: (polygons: L.LatLng[][]) => Promise<void> | void;
+  onSavePolygons?: (data: PolygonSaveData) => Promise<void> | void;
 }
 
 const SavePolygons: React.FC<SavePolygonsProps> = ({
@@ -30,33 +30,52 @@ const SavePolygons: React.FC<SavePolygonsProps> = ({
     setIsSaving(true);
 
     try {
-      // Estrai le coordinate solo dai poligoni modificati o nuovi
-      const polygonsData: L.LatLng[][] = changedPolygons.map((polygon) => {
-        const latLngs = polygon.getLatLngs();
-        // Gestisci il caso di poligoni semplici o con buchi
-        if (Array.isArray(latLngs[0])) {
-          return latLngs[0] as L.LatLng[];
-        }
-        return latLngs as L.LatLng[];
-      });
+      // Separa i poligoni per tipo
+      const newPolygons: L.LatLng[][] = [];
+      const modifiedPolygons: { id: string; coordinates: L.LatLng[] }[] = [];
+      const deletedPolygons: string[] = [];
 
-      // Informazioni sui poligoni da salvare
-      const saveInfo = changedPolygons.map((polygon) => {
+      // Elabora i poligoni modificati e nuovi
+      changedPolygons.forEach((polygon) => {
         const state = polygonStates.get(polygon);
-        return {
-          isNew: state?.isNew || false,
-          isModified: state?.isModified || false,
-        };
+        if (!state) return;
+
+        const latLngs = polygon.getLatLngs();
+        const coordinates = Array.isArray(latLngs[0])
+          ? (latLngs[0] as L.LatLng[])
+          : (latLngs as L.LatLng[]);
+
+        if (state.isNew) {
+          newPolygons.push(coordinates);
+        } else if (state.isModified) {
+          modifiedPolygons.push({
+            id: state.id || `polygon-${polygon._leaflet_id}`,
+            coordinates: coordinates,
+          });
+        }
       });
 
-      console.log("💾 Salvando poligoni modificati:", {
-        data: polygonsData,
-        info: saveInfo,
-        newCount: saveInfo.filter((s) => s.isNew).length,
-        modifiedCount: saveInfo.filter((s) => s.isModified).length,
+      // Aggiungi i poligoni eliminati (se hai un meccanismo per tracciarli)
+      polygonStates.forEach((state) => {
+        if (state.isDeleted && state.id) {
+          deletedPolygons.push(state.id);
+        }
       });
 
-      await onSavePolygons(polygonsData);
+      const saveData: PolygonSaveData = {
+        newPolygons,
+        modifiedPolygons,
+        deletedPolygons,
+      };
+
+      console.log("💾 Salvando poligoni:", {
+        nuovi: newPolygons.length,
+        modificati: modifiedPolygons.length,
+        eliminati: deletedPolygons.length,
+        data: saveData,
+      });
+
+      await onSavePolygons(saveData);
 
       // Reset dei flag di modifica dopo il salvataggio riuscito
       resetModificationFlags();
@@ -75,6 +94,9 @@ const SavePolygons: React.FC<SavePolygonsProps> = ({
   ).length;
   const modifiedCount = Array.from(polygonStates.values()).filter(
     (s) => s.isModified
+  ).length;
+  const deletedCount = Array.from(polygonStates.values()).filter(
+    (s) => s.isDeleted
   ).length;
   const canSave = changedPolygons.length > 0 && onSavePolygons && !isSaving;
 
@@ -111,6 +133,7 @@ const SavePolygons: React.FC<SavePolygonsProps> = ({
               {newCount > 0 && `${newCount} nuovi`}
               {newCount > 0 && modifiedCount > 0 && " • "}
               {modifiedCount > 0 && `${modifiedCount} modificati`}
+              {deletedCount > 0 && ` • ${deletedCount} eliminati`}
             </div>
           )}
         </>

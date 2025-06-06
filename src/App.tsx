@@ -1,9 +1,9 @@
 import { MapContainer, Polygon, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import type { LatLngExpression } from "leaflet";
-import L from "leaflet";
 import "leaflet-editable";
 import LeafletEditTools from "./LeafletEditTools/LeafletEditTools";
+import type { PolygonSaveData } from "./LeafletEditTools/types";
 
 const polygons: LatLngExpression[][] = [
   [
@@ -22,9 +22,13 @@ const polygons: LatLngExpression[][] = [
 
 function App() {
   // Funzione dimostrativa per salvare i poligoni
-  const handleSavePolygons = async (polygonsData: L.LatLng[][]) => {
+  const handleSavePolygons = async (data: PolygonSaveData) => {
     await new Promise((resolve) => setTimeout(resolve, 1000)); // Simula un salvataggio asincrono
-    console.log("Poligoni da salvare:", polygonsData);
+    console.log("Poligoni da salvare:", {
+      nuovi: data.newPolygons,
+      modificati: data.modifiedPolygons,
+      eliminati: data.deletedPolygons,
+    });
   };
 
   return (
