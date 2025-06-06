@@ -1,5 +1,5 @@
 import L from "leaflet";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useMap } from "react-leaflet";
 import "leaflet-editable";
 import CreateEditablePolygon from "./Buttons/CreateEditablePolygon";
@@ -12,13 +12,64 @@ const LeafletEditTools = ({ children }: { children: React.ReactNode }) => {
   const [isEditorVisible, setIsEditorVisible] = useState(false);
   const [editablePolygons, setEditablePolygons] = useState<L.Polygon[]>([]);
 
+  // Funzione per disabilitare l'editing E rimuovere tutti i listener di click
+  const disableAllEditingAndListeners = useCallback(() => {
+    editablePolygons.forEach((polygon) => {
+      // Disabilita l'editing
+      if (typeof polygon.disableEdit === "function") {
+        polygon.disableEdit();
+      }
+      // Rimuovi tutti i listener di click
+      polygon.off("click");
+    });
+
+    // Rimuovi i listener anche dai poligoni esistenti sulla mappa
+    if (map) {
+      map.eachLayer((layer) => {
+        if (layer instanceof L.Polygon) {
+          layer.off("click");
+        }
+      });
+    }
+
+    console.log("🔒 Tutti i listener di editing rimossi");
+  }, [editablePolygons, map]); // Dipendenze della funzione
+
+  // Funzione per abilitare l'editing di un poligono esistente
+  const enablePolygonEditing = useCallback((polygon: L.Polygon) => {
+    if (typeof polygon.enableEdit === "function") {
+      polygon.enableEdit();
+    }
+  }, []);
+
+  // Funzione per riattivare i listener sui poligoni esistenti
+  const reactivatePolygonListeners = useCallback(() => {
+    if (!map || !isEditorVisible) return;
+
+    editablePolygons.forEach((polygon) => {
+      // Rimuovi eventuali listener esistenti per evitare duplicati
+      polygon.off("click");
+      // Aggiungi il nuovo listener
+      polygon.on("click", () => {
+        enablePolygonEditing(polygon);
+      });
+    });
+
+    console.log("🔄 Listener di editing riattivati");
+  }, [map, isEditorVisible, editablePolygons, enablePolygonEditing]);
+
   useEffect(() => {
     if (!map) return;
 
     if (isEditorVisible) {
       // Attiva la modalità editable se non è già attiva
       if (!map.editTools) {
-        map.editTools = new L.Editable(map);
+        map.editTools = new L.Editable(map, {
+          // Opzioni personalizzate (facoltative)
+          // drawingCSSClass: 'leaflet-editable-drawing',
+          // editLayer: someLayer,
+          // featuresLayer: someOtherLayer
+        });
         console.log("🔧 Leaflet.Editable inizializzato");
       }
 
@@ -59,7 +110,12 @@ const LeafletEditTools = ({ children }: { children: React.ReactNode }) => {
       //   console.log("🔒 Leaflet.Editable rimosso");
       // }
     }
-  }, [map, isEditorVisible]);
+  }, [
+    map,
+    isEditorVisible,
+    enablePolygonEditing,
+    disableAllEditingAndListeners,
+  ]);
 
   // Funzione per rendere editabili i poligoni esistenti
   useEffect(() => {
@@ -84,58 +140,14 @@ const LeafletEditTools = ({ children }: { children: React.ReactNode }) => {
         registerExistingPolygon(layer);
       }
     });
-  }, [map, editablePolygons, isEditorVisible]);
+  }, [map, editablePolygons, isEditorVisible, enablePolygonEditing]);
 
   // Riattiva i listener quando l'editor diventa visibile
   useEffect(() => {
     if (isEditorVisible) {
       reactivatePolygonListeners();
     }
-  }, [isEditorVisible]);
-
-  // Funzione per abilitare l'editing di un poligono esistente
-  const enablePolygonEditing = (polygon: L.Polygon) => {
-    if (typeof polygon.enableEdit === "function") {
-      polygon.enableEdit();
-    }
-  };
-
-  // Funzione per disabilitare l'editing E rimuovere tutti i listener di click
-  const disableAllEditingAndListeners = () => {
-    editablePolygons.forEach((polygon) => {
-      // Disabilita l'editing
-      if (typeof polygon.disableEdit === "function") {
-        polygon.disableEdit();
-      }
-      // Rimuovi tutti i listener di click
-      polygon.off("click");
-    });
-
-    // Rimuovi i listener anche dai poligoni esistenti sulla mappa
-    map.eachLayer((layer) => {
-      if (layer instanceof L.Polygon) {
-        layer.off("click");
-      }
-    });
-
-    console.log("🔒 Tutti i listener di editing rimossi");
-  };
-
-  // Funzione per riattivare i listener sui poligoni esistenti
-  const reactivatePolygonListeners = () => {
-    if (!map || !isEditorVisible) return;
-
-    editablePolygons.forEach((polygon) => {
-      // Rimuovi eventuali listener esistenti per evitare duplicati
-      polygon.off("click");
-      // Aggiungi il nuovo listener
-      polygon.on("click", () => {
-        enablePolygonEditing(polygon);
-      });
-    });
-
-    console.log("🔄 Listener di editing riattivati");
-  };
+  }, [isEditorVisible, reactivatePolygonListeners]);
 
   return (
     <>
