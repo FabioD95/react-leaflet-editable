@@ -12,6 +12,8 @@ const LeafletEditTools = ({ children }: { children: React.ReactNode }) => {
   const {
     editablePolygons,
     setEditablePolygons,
+    currentEditingPolygon,
+    setCurrentEditingPolygon,
     disableAllEditingAndListeners,
     enablePolygonEditing,
     reactivatePolygonListeners,
@@ -70,6 +72,9 @@ const LeafletEditTools = ({ children }: { children: React.ReactNode }) => {
         setIsEditorVisible={setIsEditorVisible}
         map={map}
         editablePolygons={editablePolygons}
+        setEditablePolygons={setEditablePolygons}
+        currentEditingPolygon={currentEditingPolygon}
+        setCurrentEditingPolygon={setCurrentEditingPolygon}
       />
     </>
   );

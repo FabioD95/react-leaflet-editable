@@ -1,3 +1,13 @@
+// Button variants for different states
+export const BUTTON_VARIANTS = {
+  primary: "#007bff",
+  danger: "#dc3545",
+  warning: "#ff9800",
+  success: "#4CAF50",
+  secondary: "#6c757d",
+  disabled: "#ccc",
+};
+
 export const EDITOR_PANEL_STYLES = {
   position: "absolute" as const,
   top: 10,
@@ -65,6 +75,14 @@ export const CREATE_POLYGON_BUTTON_STYLES = {
   width: "100%",
 };
 
+// Delete Polygon Button
+export const DELETE_POLYGON_BUTTON_STYLES = {
+  ...BASE_BUTTON_STYLES,
+  backgroundColor: BUTTON_VARIANTS.danger,
+  width: "100%",
+  marginTop: "10px",
+};
+
 // Disable All Editing Button
 export const DISABLE_ALL_EDITING_BUTTON_STYLES = {
   ...BASE_BUTTON_STYLES,
@@ -73,12 +91,15 @@ export const DISABLE_ALL_EDITING_BUTTON_STYLES = {
   marginTop: "10px",
 };
 
-// Button variants for different states
-export const BUTTON_VARIANTS = {
-  primary: "#007bff",
-  danger: "#dc3545",
-  warning: "#ff9800",
-  success: "#4CAF50",
-  secondary: "#6c757d",
-  disabled: "#ccc",
-};
+// Button styles with state variants
+export const getButtonStyles = (
+  baseStyle: typeof BASE_BUTTON_STYLES,
+  variant: keyof typeof BUTTON_VARIANTS,
+  disabled: boolean = false
+) => ({
+  ...baseStyle,
+  backgroundColor: disabled
+    ? BUTTON_VARIANTS.disabled
+    : BUTTON_VARIANTS[variant],
+  cursor: disabled ? "not-allowed" : "pointer",
+});
