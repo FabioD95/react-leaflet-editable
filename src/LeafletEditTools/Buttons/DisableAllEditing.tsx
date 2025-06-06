@@ -1,3 +1,6 @@
+import L from "leaflet";
+import { DISABLE_ALL_EDITING_BUTTON_STYLES } from "../constants/styles";
+
 const DisableAllEditing = ({
   editablePolygons,
 }: {
@@ -14,15 +17,7 @@ const DisableAllEditing = ({
   return (
     <button
       onClick={disableAllEditing}
-      style={{
-        padding: "10px",
-        color: "white",
-        backgroundColor: "#dc3545",
-        border: "none",
-        borderRadius: "5px",
-        width: "100%",
-        marginTop: "10px",
-      }}
+      style={DISABLE_ALL_EDITING_BUTTON_STYLES}
     >
       ✋ Disabilita Editing
     </button>

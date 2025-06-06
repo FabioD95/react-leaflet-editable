@@ -1,3 +1,5 @@
+import { ENABLE_EDITOR_BUTTON_STYLES } from "../constants/styles";
+
 const EnableEditor = ({
   isEditorVisible,
   setIsEditorVisible,
@@ -9,21 +11,13 @@ const EnableEditor = ({
     <button
       onClick={() => setIsEditorVisible(true)}
       style={{
+        ...ENABLE_EDITOR_BUTTON_STYLES,
         visibility: !isEditorVisible ? "visible" : "hidden",
-        position: "absolute",
-        top: 10,
-        right: 10,
-        zIndex: 1000,
-        padding: "10px",
-        backgroundColor: "#007bff",
-        color: "white",
-        border: "none",
-        borderRadius: "5px",
-        cursor: "pointer",
       }}
     >
       Attiva Editor
     </button>
   );
 };
+
 export default EnableEditor;

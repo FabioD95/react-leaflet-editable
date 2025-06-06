@@ -1,4 +1,5 @@
 import type { Map } from "leaflet";
+import { CREATE_POLYGON_BUTTON_STYLES } from "../constants/styles";
 
 const CreateEditablePolygon = ({ map }: { map: Map }) => {
   const createEditablePolygon = () => {
@@ -6,17 +7,11 @@ const CreateEditablePolygon = ({ map }: { map: Map }) => {
 
     map.editTools.startPolygon();
   };
+
   return (
     <button
       onClick={createEditablePolygon}
-      style={{
-        padding: "10px",
-        color: "white",
-        backgroundColor: "#007bff",
-        border: "none",
-        borderRadius: "5px",
-        width: "100%",
-      }}
+      style={CREATE_POLYGON_BUTTON_STYLES}
     >
       🖊️ Disegna Poligono Editabile
     </button>
