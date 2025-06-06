@@ -4,6 +4,7 @@ import DisableEditor from "../Buttons/DisableEditor";
 import CreateEditablePolygon from "../Buttons/CreateEditablePolygon";
 import DisableAllEditing from "../Buttons/DisableAllEditing";
 import DeletePolygon from "../Buttons/DeletePolygon";
+import SavePolygons from "../Buttons/SavePolygons";
 import { EDITOR_PANEL_STYLES } from "../constants/styles";
 
 interface EditorPanelProps {
@@ -16,6 +17,7 @@ interface EditorPanelProps {
   setCurrentEditingPolygon: React.Dispatch<
     React.SetStateAction<L.Polygon | null>
   >;
+  onSavePolygons?: (polygons: L.LatLng[][]) => Promise<void> | void;
 }
 
 const EditorPanel: React.FC<EditorPanelProps> = ({
@@ -26,6 +28,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
   setEditablePolygons,
   currentEditingPolygon,
   setCurrentEditingPolygon,
+  onSavePolygons,
 }) => {
   return (
     <div
@@ -36,12 +39,30 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
     >
       <h2 style={{ alignSelf: "center", margin: 0 }}>Leaflet Edit Tools</h2>
       <DisableEditor setIsEditorVisible={setIsEditorVisible} />
+
+      {/* Sezione di creazione e modifica */}
       <CreateEditablePolygon map={map} />
       <DisableAllEditing editablePolygons={editablePolygons} />
       <DeletePolygon
         setEditablePolygons={setEditablePolygons}
         currentEditingPolygon={currentEditingPolygon}
         setCurrentEditingPolygon={setCurrentEditingPolygon}
+      />
+
+      {/* Separatore visivo */}
+      <div
+        style={{
+          width: "100%",
+          height: "1px",
+          backgroundColor: "#ddd",
+          margin: "10px 0",
+        }}
+      />
+
+      {/* Sezione di salvataggio */}
+      <SavePolygons
+        editablePolygons={editablePolygons}
+        onSavePolygons={onSavePolygons}
       />
 
       {/* Info sui poligoni */}
@@ -58,6 +79,11 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
         {currentEditingPolygon && (
           <p style={{ color: "#007bff", fontWeight: "bold" }}>
             ✏️ Poligono selezionato per editing
+          </p>
+        )}
+        {onSavePolygons && (
+          <p style={{ color: "#4CAF50", fontSize: "10px" }}>
+            ✓ Funzione di salvataggio configurata
           </p>
         )}
       </div>

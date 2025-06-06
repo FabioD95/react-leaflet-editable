@@ -6,7 +6,15 @@ import { useLeafletEditable } from "./hooks/useLeafletEditable";
 import { useEditorVisibility } from "./hooks/useEditorVisibility";
 import L from "leaflet";
 
-const LeafletEditTools = ({ children }: { children: React.ReactNode }) => {
+interface LeafletEditToolsProps {
+  children: React.ReactNode;
+  onSavePolygons?: (polygons: L.LatLng[][]) => Promise<void> | void;
+}
+
+const LeafletEditTools = ({
+  children,
+  onSavePolygons,
+}: LeafletEditToolsProps) => {
   const map = useMap();
 
   const {
@@ -75,6 +83,7 @@ const LeafletEditTools = ({ children }: { children: React.ReactNode }) => {
         setEditablePolygons={setEditablePolygons}
         currentEditingPolygon={currentEditingPolygon}
         setCurrentEditingPolygon={setCurrentEditingPolygon}
+        onSavePolygons={onSavePolygons}
       />
     </>
   );

@@ -91,6 +91,14 @@ export const DISABLE_ALL_EDITING_BUTTON_STYLES = {
   marginTop: "10px",
 };
 
+// Save Polygons Button
+export const SAVE_POLYGONS_BUTTON_STYLES = {
+  ...BASE_BUTTON_STYLES,
+  backgroundColor: BUTTON_VARIANTS.success,
+  width: "100%",
+  marginTop: "10px",
+};
+
 // Button styles with state variants
 export const getButtonStyles = (
   baseStyle: typeof BASE_BUTTON_STYLES,
