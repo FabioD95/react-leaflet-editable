@@ -46,8 +46,14 @@ const LeafletEditTools = ({ children }: { children: React.ReactNode }) => {
         map.off("editable:drawing:end", onDrawingEnd);
       };
     } else {
-      // Quando l'editor è nascosto, disabilita l'editing di tutti i poligoni
-      disableAllEditing();
+      // Quando l'editor è nascosto, disabilita completamente la modalità editing
+      disableAllEditingAndListeners();
+
+      // Opzionale: rimuovi completamente editTools se vuoi "resettare" tutto
+      // if (map.editTools) {
+      //   delete map.editTools;
+      //   console.log("🔒 Leaflet.Editable rimosso");
+      // }
     }
   }, [map, isEditorVisible]);
 
@@ -58,6 +64,9 @@ const LeafletEditTools = ({ children }: { children: React.ReactNode }) => {
     // Funzione per registrare un poligono esistente
     const registerExistingPolygon = (layer: L.Polygon) => {
       if (!editablePolygons.includes(layer)) {
+        // Rimuovi eventuali listener esistenti
+        layer.off("click");
+        // Aggiungi il listener per l'editing
         layer.on("click", () => {
           enablePolygonEditing(layer);
         });
@@ -72,6 +81,13 @@ const LeafletEditTools = ({ children }: { children: React.ReactNode }) => {
       }
     });
   }, [map, editablePolygons, isEditorVisible]);
+
+  // Riattiva i listener quando l'editor diventa visibile
+  useEffect(() => {
+    if (isEditorVisible) {
+      reactivatePolygonListeners();
+    }
+  }, [isEditorVisible]);
 
   const createEditablePolygon = () => {
     if (!map || !map.editTools) return;
@@ -93,6 +109,43 @@ const LeafletEditTools = ({ children }: { children: React.ReactNode }) => {
         polygon.disableEdit();
       }
     });
+  };
+
+  // Funzione per disabilitare l'editing E rimuovere tutti i listener di click
+  const disableAllEditingAndListeners = () => {
+    editablePolygons.forEach((polygon) => {
+      // Disabilita l'editing
+      if (typeof polygon.disableEdit === "function") {
+        polygon.disableEdit();
+      }
+      // Rimuovi tutti i listener di click
+      polygon.off("click");
+    });
+
+    // Rimuovi i listener anche dai poligoni esistenti sulla mappa
+    map.eachLayer((layer) => {
+      if (layer instanceof L.Polygon) {
+        layer.off("click");
+      }
+    });
+
+    console.log("🔒 Tutti i listener di editing rimossi");
+  };
+
+  // Funzione per riattivare i listener sui poligoni esistenti
+  const reactivatePolygonListeners = () => {
+    if (!map || !isEditorVisible) return;
+
+    editablePolygons.forEach((polygon) => {
+      // Rimuovi eventuali listener esistenti per evitare duplicati
+      polygon.off("click");
+      // Aggiungi il nuovo listener
+      polygon.on("click", () => {
+        enablePolygonEditing(polygon);
+      });
+    });
+
+    console.log("🔄 Listener di editing riattivati");
   };
 
   const toggleEditorVisibility = () => {
