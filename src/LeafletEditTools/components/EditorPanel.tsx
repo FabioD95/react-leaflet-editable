@@ -4,6 +4,7 @@ import DisableEditor from "../Buttons/DisableEditor";
 import CreateEditablePolygon from "../Buttons/CreateEditablePolygon";
 import DisableAllEditing from "../Buttons/DisableAllEditing";
 import DeletePolygon from "../Buttons/DeletePolygon";
+import RestorePolygon from "../Buttons/RestorePolygon"; // Nuovo import
 import SavePolygons from "../Buttons/SavePolygons";
 import { EDITOR_PANEL_STYLES } from "../constants/styles";
 import type { PolygonSaveData, PolygonState } from "../types";
@@ -18,7 +19,8 @@ interface EditorPanelProps {
   removePolygon: (polygon: L.Polygon) => void;
   getChangedPolygons: () => L.Polygon[];
   resetModificationFlags: () => void;
-  onSavePolygons?: (data: PolygonSaveData) => Promise<void> | void; // Aggiornato qui
+  onSavePolygons?: (data: PolygonSaveData) => Promise<void> | void;
+  restorePolygonOriginalCoordinates: (polygon: L.Polygon) => boolean; // Nuova prop
 }
 
 const EditorPanel: React.FC<EditorPanelProps> = ({
@@ -32,6 +34,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
   getChangedPolygons,
   resetModificationFlags,
   onSavePolygons,
+  restorePolygonOriginalCoordinates, // Nuova prop
 }) => {
   const changedPolygons = getChangedPolygons();
   const newCount = Array.from(polygonStates.values()).filter(
@@ -60,6 +63,11 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
       <DeletePolygon
         removePolygon={removePolygon}
         currentEditingPolygon={currentEditingPolygon}
+      />
+      <RestorePolygon
+        restorePolygonOriginalCoordinates={restorePolygonOriginalCoordinates}
+        currentEditingPolygon={currentEditingPolygon}
+        polygonStates={polygonStates}
       />
 
       {/* Separatore visivo */}

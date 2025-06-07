@@ -25,6 +25,7 @@ const LeafletEditTools = ({
     enablePolygonEditing,
     reactivatePolygonListeners,
     addNewPolygon,
+    restorePolygonOriginalCoordinates, // Nuova funzione
   } = useLeafletEditable(map);
 
   const { isEditorVisible, setIsEditorVisible } = useEditorVisibility(
@@ -86,6 +87,7 @@ const LeafletEditTools = ({
         getChangedPolygons={getChangedPolygons}
         resetModificationFlags={resetModificationFlags}
         onSavePolygons={onSavePolygons}
+        restorePolygonOriginalCoordinates={restorePolygonOriginalCoordinates} // Nuova prop
       />
     </>
   );

@@ -30,9 +30,21 @@ export const useLeafletEditable = (map: L.Map | undefined) => {
     (polygon: L.Polygon) => {
       if (!editablePolygons.includes(polygon)) {
         const coordinates = polygon.getLatLngs();
-        const flatCoords = Array.isArray(coordinates[0])
-          ? (coordinates[0] as L.LatLng[])
-          : (coordinates as L.LatLng[]);
+        let flatCoords: L.LatLng[];
+
+        // Gestisci sia poligoni semplici che multipoligoni
+        if (Array.isArray(coordinates[0])) {
+          flatCoords = coordinates[0] as L.LatLng[];
+        } else {
+          flatCoords = coordinates as L.LatLng[];
+        }
+
+        // Crea una copia profonda delle coordinate originali
+        const originalCoordinates = flatCoords.map((coord) =>
+          L.latLng(coord.lat, coord.lng)
+        );
+
+        console.log("💾 Salvando coordinate originali:", originalCoordinates);
 
         setEditablePolygons((prev) => [...prev, polygon]);
         setPolygonStates((prev) => {
@@ -41,7 +53,7 @@ export const useLeafletEditable = (map: L.Map | undefined) => {
             polygon,
             isNew: false,
             isModified: false,
-            originalCoordinates: [...flatCoords], // Copia delle coordinate originali
+            originalCoordinates: originalCoordinates,
             id: `existing-${polygon._leaflet_id}`,
           });
           return newMap;
@@ -204,6 +216,89 @@ export const useLeafletEditable = (map: L.Map | undefined) => {
     console.log("🔄 Listener di editing riattivati");
   }, [map, editablePolygons, enablePolygonEditing]);
 
+  // Funzione per ripristinare le coordinate originali di un poligono
+  const restorePolygonOriginalCoordinates = useCallback(
+    (polygon: L.Polygon) => {
+      const state = polygonStates.get(polygon);
+
+      if (!state || state.isNew) {
+        console.warn(
+          "⚠️ Impossibile ripristinare: poligono nuovo o stato non trovato"
+        );
+        return false;
+      }
+
+      if (
+        !state.originalCoordinates ||
+        state.originalCoordinates.length === 0
+      ) {
+        console.warn(
+          "⚠️ Impossibile ripristinare: coordinate originali non disponibili"
+        );
+        return false;
+      }
+
+      try {
+        console.log(
+          "🔄 Ripristinando coordinate originali:",
+          state.originalCoordinates
+        );
+
+        // Disabilita l'editing temporaneamente
+        if (typeof polygon.disableEdit === "function") {
+          polygon.disableEdit();
+        }
+
+        // Crea una copia profonda delle coordinate originali
+        const originalCoords = state.originalCoordinates.map((coord) =>
+          L.latLng(coord.lat, coord.lng)
+        );
+
+        // Ripristina le coordinate originali
+        polygon.setLatLngs([originalCoords]);
+
+        // Forza il redraw del poligono
+        polygon.redraw();
+
+        // Aggiorna lo stato per rimuovere il flag di modifica
+        setPolygonStates((prev) => {
+          const newMap = new Map(prev);
+          newMap.set(polygon, {
+            ...state,
+            isModified: false,
+          });
+          return newMap;
+        });
+
+        // Riabilita l'editing se era il poligono correntemente in editing
+        if (currentEditingPolygon === polygon) {
+          setTimeout(() => {
+            if (typeof polygon.enableEdit === "function") {
+              polygon.enableEdit();
+
+              // Riattiva il listener per le modifiche
+              polygon.off("editable:editing");
+              polygon.on("editable:editing", () => {
+                markPolygonAsModified(polygon);
+                console.log("✏️ Poligono modificato:", polygon);
+              });
+            }
+          }, 100);
+        }
+
+        console.log("✅ Coordinate originali ripristinate per il poligono");
+        return true;
+      } catch (error) {
+        console.error(
+          "❌ Errore durante il ripristino delle coordinate:",
+          error
+        );
+        return false;
+      }
+    },
+    [polygonStates, currentEditingPolygon, markPolygonAsModified]
+  );
+
   return {
     editablePolygons,
     setEditablePolygons,
@@ -218,5 +313,6 @@ export const useLeafletEditable = (map: L.Map | undefined) => {
     disableAllEditingAndListeners,
     enablePolygonEditing,
     reactivatePolygonListeners,
+    restorePolygonOriginalCoordinates, // Nuova funzione
   };
 };
