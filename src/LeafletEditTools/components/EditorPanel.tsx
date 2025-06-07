@@ -4,7 +4,8 @@ import DisableEditor from "../Buttons/DisableEditor";
 import CreateEditablePolygon from "../Buttons/CreateEditablePolygon";
 import DisableAllEditing from "../Buttons/DisableAllEditing";
 import DeletePolygon from "../Buttons/DeletePolygon";
-import RestorePolygon from "../Buttons/RestorePolygon"; // Nuovo import
+import RestorePolygon from "../Buttons/RestorePolygon";
+import ResetToOriginal from "../Buttons/ResetToOriginal"; // Nuovo import
 import SavePolygons from "../Buttons/SavePolygons";
 import { EDITOR_PANEL_STYLES } from "../constants/styles";
 import type { PolygonSaveData, PolygonState } from "../types";
@@ -20,7 +21,8 @@ interface EditorPanelProps {
   getChangedPolygons: () => L.Polygon[];
   resetModificationFlags: () => void;
   onSavePolygons?: (data: PolygonSaveData) => Promise<void> | void;
-  restorePolygonOriginalCoordinates: (polygon: L.Polygon) => boolean; // Nuova prop
+  restorePolygonOriginalCoordinates: (polygon: L.Polygon) => boolean;
+  resetToOriginalState: () => boolean; // Nuova prop
 }
 
 const EditorPanel: React.FC<EditorPanelProps> = ({
@@ -34,7 +36,8 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
   getChangedPolygons,
   resetModificationFlags,
   onSavePolygons,
-  restorePolygonOriginalCoordinates, // Nuova prop
+  restorePolygonOriginalCoordinates,
+  resetToOriginalState, // Nuova prop
 }) => {
   const changedPolygons = getChangedPolygons();
   const newCount = Array.from(polygonStates.values()).filter(
@@ -80,12 +83,17 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
         }}
       />
 
-      {/* Sezione di salvataggio */}
+      {/* Sezione di salvataggio e reset */}
       <SavePolygons
         getChangedPolygons={getChangedPolygons}
         resetModificationFlags={resetModificationFlags}
         polygonStates={polygonStates}
         onSavePolygons={onSavePolygons}
+      />
+
+      <ResetToOriginal
+        resetToOriginalState={resetToOriginalState}
+        polygonStates={polygonStates}
       />
 
       {/* Info sui poligoni */}

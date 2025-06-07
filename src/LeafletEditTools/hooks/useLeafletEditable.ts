@@ -299,6 +299,107 @@ export const useLeafletEditable = (map: L.Map | undefined) => {
     [polygonStates, currentEditingPolygon, markPolygonAsModified]
   );
 
+  // Funzione per ripristinare tutto allo stato originale
+  const resetToOriginalState = useCallback(() => {
+    if (!map) {
+      console.warn("⚠️ Mappa non disponibile per il reset");
+      return false;
+    }
+
+    try {
+      console.log("🔄 Iniziando reset completo allo stato originale...");
+
+      // Array per tracciare i poligoni da ripristinare sulla mappa
+      const polygonsToRestore: L.Polygon[] = [];
+
+      polygonStates.forEach((state, polygon) => {
+        if (state.isNew) {
+          // Rimuovi i poligoni nuovi dalla mappa e dallo stato
+          console.log("🗑️ Rimuovendo poligono nuovo:", state.id);
+
+          if (
+            polygon.disableEdit &&
+            typeof polygon.disableEdit === "function"
+          ) {
+            polygon.disableEdit();
+          }
+          polygon.remove();
+        } else if (state.isDeleted) {
+          // Ripristina i poligoni eliminati sulla mappa
+          console.log("📍 Ripristinando poligono eliminato:", state.id);
+
+          if (state.originalCoordinates) {
+            const restoredPolygon = L.polygon(state.originalCoordinates);
+            restoredPolygon.addTo(map);
+
+            // Aggiungi il listener per il click
+            restoredPolygon.on("click", () => {
+              enablePolygonEditing(restoredPolygon);
+            });
+
+            polygonsToRestore.push(restoredPolygon);
+          }
+        } else if (state.isModified) {
+          // Ripristina le coordinate originali dei poligoni modificati
+          console.log("🔄 Ripristinando coordinate originali:", state.id);
+
+          if (state.originalCoordinates) {
+            if (
+              polygon.disableEdit &&
+              typeof polygon.disableEdit === "function"
+            ) {
+              polygon.disableEdit();
+            }
+
+            polygon.setLatLngs([state.originalCoordinates]);
+            polygon.redraw();
+
+            polygonsToRestore.push(polygon);
+          }
+        } else {
+          // Poligoni non modificati, mantienili
+          polygonsToRestore.push(polygon);
+        }
+      });
+
+      // Aggiorna lo stato con solo i poligoni originali
+      setEditablePolygons(polygonsToRestore);
+
+      // Ricrea lo stato pulito per i poligoni ripristinati
+      const newPolygonStates = new Map<L.Polygon, PolygonState>();
+
+      polygonsToRestore.forEach((polygon) => {
+        const coordinates = polygon.getLatLngs();
+        const flatCoords = Array.isArray(coordinates[0])
+          ? (coordinates[0] as L.LatLng[])
+          : (coordinates as L.LatLng[]);
+
+        const originalCoordinates = flatCoords.map((coord) =>
+          L.latLng(coord.lat, coord.lng)
+        );
+
+        newPolygonStates.set(polygon, {
+          polygon,
+          isNew: false,
+          isModified: false,
+          originalCoordinates: originalCoordinates,
+          id: `existing-${polygon._leaflet_id}`,
+        });
+      });
+
+      setPolygonStates(newPolygonStates);
+      setCurrentEditingPolygon(null);
+
+      console.log("✅ Reset completo completato!");
+      console.log("📊 Poligoni ripristinati:", polygonsToRestore.length);
+
+      return true;
+    } catch (error) {
+      console.error("❌ Errore durante il reset completo:", error);
+      return false;
+    }
+  }, [map, polygonStates, enablePolygonEditing]);
+
   return {
     editablePolygons,
     setEditablePolygons,
@@ -313,6 +414,7 @@ export const useLeafletEditable = (map: L.Map | undefined) => {
     disableAllEditingAndListeners,
     enablePolygonEditing,
     reactivatePolygonListeners,
-    restorePolygonOriginalCoordinates, // Nuova funzione
+    restorePolygonOriginalCoordinates,
+    resetToOriginalState, // Nuova funzione
   };
 };
