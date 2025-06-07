@@ -48,6 +48,12 @@ export const useEditorVisibility = (
       };
     } else {
       disableAllEditingAndListeners();
+
+      // Opzionale: rimuovi completamente editTools se vuoi "resettare" tutto
+      // if (map.editTools) {
+      //   delete map.editTools;
+      //   console.log("🔒 Leaflet.Editable rimosso");
+      // }
     }
   }, [
     map,
